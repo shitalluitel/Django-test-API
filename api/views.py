@@ -1,79 +1,60 @@
-# # from django.shortcuts import render
-#
-# # # Create your views here.
-#
-#
-#
-from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-
-
+from rest_framework import status, permissions
 from .models import Api
 from .serializers import ApiSerializer
+from .permissions import IsOwner
 
 
-@api_view(['GET', 'POST'])
-def task_list(request):
-    """
-    List all Apis, or create a new Api.
-    """
-    if request.method == 'GET':
-        Apis = Api.objects.all()
-        serializer = ApiSerializer(Apis, many=True)
-        return Response(serializer.data)
+# from rest_framework.permissions import IsAuthenticated
 
-    elif request.method == 'POST':
+
+class CreateListApi(APIView):
+    def get(self, request, format=None):
+        api = Api.objects.all()
+        paginator = PageNumberPagination()
+        paginator.page_size = 2
+        result_page = paginator.paginate_queryset(api, request)
+        serializer = ApiSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request, format=None):
         serializer = ApiSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            # serializer.user = request.user
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
-def task_detail(request, pk):
-    """
-    Get, udpate, or delete a specific Api
-    """
+def get_data(*args):
     try:
-        Apis = Api.objects.get(pk=pk)
+        api = Api.objects.get(pk=args[0])
+        return api
     except Api.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'GET':
-        serializer = ApiSerializer(Apis)
-        return Response(serializer.data)
 
-    elif request.method == 'PUT':
-        serializer = ApiSerializer(Apis, data=request.data)
+class UpdateApi(APIView):
+    permission_classes = (IsOwner,)
+
+    def get_queryset(self):
+        return Api.objects.filter(pk=self.kwargs['pk'])
+
+    def put(self, request, pk, format=None):
+        serializer = ApiSerializer(get_data(pk), data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        else:
-            return Response(
-                serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'DELETE':
-        Apis.delete()
+
+class DeleteDetailApi(APIView):
+    def get(self, request, pk, format=None):
+        serializer = ApiSerializer(get_data(pk))
+        return Response(serializer.data)
+
+    def delete(self, request, pk, format=None):
+        self.get_data(pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-# from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-# from rest_framework.permissions import IsAuthenticated
-# from .models import Api
-# from .serializers import ApiSerializer
-#
-#
-# class ApiListCreateAPIView(ListCreateAPIView):
-#     queryset = Api.objects.all()
-#     permission_classes = (IsAuthenticated,)
-#     serializer_class = ApiSerializer
-#
-#
-# class ApiRetrieveUpdateDestroyApiView(RetrieveUpdateDestroyAPIView):
-#     queryset = Api.objects.all()
-#     permission_classes = (IsAuthenticated,)
-#     serializer_class = ApiSerializer

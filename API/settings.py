@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
-    'rest_framework'
+    'rest_framework',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +130,17 @@ REST_FRAMEWORK = {
 JWT_AUTH = {
     'JWT_VERIFY_EXPIRATION': False,
 }
+
+LOGIN_URL = '/users/login/'
+AUTH_USER_MODEL = 'users.User'
+BASE_URL = 'http://lupim.herokuapp.com/'
+ADMIN_EMAIL = 'noreply@lupim.com'
+
+'''
+for email google smtp
+'''
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'thefidgetcoders@gmail.com'
+EMAIL_HOST_PASSWORD = 'fidget@c0d3r5'
+EMAIL_PORT = 587
